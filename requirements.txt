@@ -2,5 +2,4 @@ streamlit
 streamlit_option_menu
 pandas
 plotly
-mysql-client
-SQLAlchemy
+random
