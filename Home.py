@@ -3,7 +3,6 @@ from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import random
 
 ####################################################################
 ########################## initial set up ##########################
