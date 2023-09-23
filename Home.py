@@ -3,7 +3,7 @@ from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-
+import random
 ####################################################################
 ########################## initial set up ##########################
 ####################################################################
@@ -38,34 +38,6 @@ with st.sidebar:
             },
     )
 ####################################################################
-########################### data process ###########################
-####################################################################
-result_df = pd.read_csv("https://raw.githubusercontent.com/lnl1119/2023SOS_result/main/2023SOS_result_all_clean_final.csv")
-# bar and area plot data
-bar_df = result_df.sort_values(by=['realscore'])
-bar_df = bar_df.reset_index(drop = True)
-bins = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-labels = ['0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100']
-bar_df['realInterval'] = pd.cut(bar_df['realscore'], bins=bins, labels=labels, right=False)
-bar_df['AIInterval'] = pd.cut(bar_df['AIscore'], bins=bins, labels=labels, right=False)
-realcounts = bar_df['realInterval'].value_counts(sort=False)
-AIcounts = bar_df['AIInterval'].value_counts(sort=False)
-# dumbbell plot
-raw_df = result_df[["realscore", "AIscore"]]
-raw_df['change'] = raw_df.iloc[:, 1] - raw_df.iloc[:, 0]# AI - real
-raw_df['absolutechange'] = raw_df['change'].abs()
-df_n = raw_df[raw_df['change'] < 0]
-df_0 = raw_df[raw_df['change'] == 0]
-df_p = raw_df[raw_df['change'] > 0]
-
-n_change_interval = pd.cut(df_n['absolutechange'], bins=bins, labels=labels, right=False)
-n_changecounts_df = pd.DataFrame(n_change_interval.value_counts(sort=False))
-n_changecounts_df.columns = ["nchange"]
-p_change_interval = pd.cut(df_p['absolutechange'], bins=bins, labels=labels, right=False)
-p_changecounts_df = pd.DataFrame(p_change_interval.value_counts(sort=False))
-p_changecounts_df.columns = ["pchange"]
-np_changecounts_df = pd.concat([p_changecounts_df, n_changecounts_df],axis = 1)
-####################################################################
 ############################# variable #############################
 ####################################################################
 teacher_color = "#00a1de"
@@ -75,16 +47,24 @@ teachergreaterthanAI_color='#6897bb' #dark blue #<0
 ####################################################################
 ############################# function #############################
 ####################################################################
+def bins_function(start_num, end_num, range_differ):
+    real_end = end_num + range_differ
+    bin_list = list(range(start_num, real_end, range_differ))
+    return bin_list
+def labels_function(bins):
+    label_list = [str(bins[i]) + "-" + str(bins[i+1]) for i in range(len(bins)-1)]
+    return label_list
+
 # plot bar
 def bar_plot(bar_df):
     fig1 = go.Figure()
     fig1.add_trace(go.Bar(name='Teacher', 
-                    x=labels, y=realcounts, 
+                    x=labels_0100, y=realcounts, 
                     marker_color = teacher_color,
                     text = realcounts, textposition="outside", 
                     textfont=dict(size=13,color = teacher_color)))
     fig1.add_trace(go.Bar(name='AI', 
-                    x=labels, y = AIcounts, 
+                    x=labels_0100, y = AIcounts, 
                     marker_color = AI_color,
                     text = AIcounts, textposition="outside", 
                     textfont=dict(size=13, color = AI_color)))
@@ -97,7 +77,7 @@ def bar_plot(bar_df):
 def area_plot(bar_df):
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
-        x=labels, y=realcounts,
+        x=labels_0100, y=realcounts,
         text = realcounts, textposition="top left", 
         textfont=dict(
             size=15,
@@ -106,7 +86,7 @@ def area_plot(bar_df):
         marker = dict(color = teacher_color),
         mode="lines+markers+text", fill='tozeroy')) # fill down to xaxis
     fig2.add_trace(go.Scatter(
-        x=labels, y=AIcounts, 
+        x=labels_0100, y=AIcounts, 
         text = AIcounts, textposition="top right", 
         textfont=dict(
             size=15,
@@ -120,7 +100,7 @@ def area_plot(bar_df):
     st.plotly_chart(fig2, use_container_width=True,height=700, theme="streamlit")
 
 # plot dumbbell
-def dumbbell_plot(df, show_dashline):
+def dumbbell_plot(df, AI_teacher_split, show_differlabel, score_differ):
     fig3= go.Figure()
     fig3.add_trace(go.Scatter(x = df.index,
                         y = df["realscore"],
@@ -153,50 +133,54 @@ def dumbbell_plot(df, show_dashline):
         change = df.iloc[i, 3]
         color=AIgreaterthanteacher_color if(change>0) else teachergreaterthanAI_color 
         y_position = df.iloc[i,2]+5 if change > 0 else df.iloc[i,2]-3
-        if change >= 25 or change <= -25:
-            fig3.add_annotation(x=df.index[i], y=y_position,
+        if change >= show_differlabel or change <= -show_differlabel:
+            fig3.add_annotation(x=df.index[i], y=y_position,# +random.randint(1,5),
+                yanchor= "auto",
                 text=str(change),
                 showarrow=False,
-                font=dict(size=15,color=color))
+                font=dict(size=show_differlabel*0.2+10,color=color))
     
-    if show_dashline:
+    if AI_teacher_split:
+        df_differ_n = raw_df[raw_df['change'] < -score_differ]
+        df_differ_0 = raw_df[(raw_df['change'] <= score_differ) & (raw_df['change'] >= -score_differ)]
+        df_differ_p = raw_df[raw_df['change'] > score_differ]
         # plot vertical line to split negative and positve
         fig3.add_shape(type='line',
-                        x0 = df_n.shape[0]-0.5, y0 = 105,
-                        x1 = df_n.shape[0]-0.5, y1 = 0,
+                        x0 = df_differ_n.shape[0]-0.5, y0 = 105,
+                        x1 = df_differ_n.shape[0]-0.5, y1 = 0,
                         line=dict(color='grey', width = 1, dash = "dashdot"))
         fig3.add_shape(type='line',
-                        x0 = df_n.shape[0]+df_0.shape[0]-0.5, y0 = 105,
-                        x1 = df_n.shape[0]+df_0.shape[0]-0.5, y1 = 0,
+                        x0 = df_differ_n.shape[0]+df_differ_0.shape[0]-0.5, y0 = 105,
+                        x1 = df_differ_n.shape[0]+df_differ_0.shape[0]-0.5, y1 = 0,
                         line=dict(color='grey', width = 1, dash = "dashdot"))
         # text
-        fig3.add_annotation(x=45, y=110,
-                text="老師 > AI",
+        fig3.add_annotation(x=df_differ_n.shape[0]/2, y=110,
+                text="AI < 老師",
                 showarrow=False,
                 yshift=10,
                 font=dict(size=20,color=teachergreaterthanAI_color))
-        fig3.add_annotation(x=45, y=105,
-                text=f"({int(100*df_n.shape[0]/df.shape[0])}%)",
+        fig3.add_annotation(x=df_differ_n.shape[0]/2, y=105,
+                text=f"({int(100*df_differ_n.shape[0]/df.shape[0])}%)",
                 showarrow=False,
                 yshift=10,
                 font=dict(size=20,color=teachergreaterthanAI_color))
-        fig3.add_annotation(x=95.5, y=110,
+        fig3.add_annotation(x=df_differ_n.shape[0]+(df_differ_0.shape[0]/2), y=110,
                 text="老師 = AI",
                 showarrow=False,
                 yshift=10,
                 font=dict(size=20,color="grey"))
-        fig3.add_annotation(x=95.5, y=105,
-                text=f"({int(100*df_0.shape[0]/df.shape[0])}%)",
+        fig3.add_annotation(x=df_differ_n.shape[0]+(df_differ_0.shape[0]/2), y=105,
+                text=f"({int(100*df_differ_0.shape[0]/df.shape[0])}%)",
                 showarrow=False,
                 yshift=10,
                 font=dict(size=20,color="grey"))
-        fig3.add_annotation(x=125, y=110,
+        fig3.add_annotation(x=df.shape[0]-df_differ_p.shape[0]/2, y=110,
                 text="AI > 老師",
                 showarrow=False,
                 yshift=10,
                 font=dict(size=20,color=AIgreaterthanteacher_color))
-        fig3.add_annotation(x=125, y=105,
-                text=f"({int(100*df_p.shape[0]/df.shape[0])}%)",
+        fig3.add_annotation(x=df.shape[0]-df_differ_p.shape[0]/2, y=105,
+                text=f"({int(100*df_differ_p.shape[0]/df.shape[0])}%)",
                 showarrow=False,
                 yshift=10,
                 font=dict(size=20,color=AIgreaterthanteacher_color))
@@ -210,16 +194,29 @@ def dumbbell_plot(df, show_dashline):
 
     st.plotly_chart(fig3, use_container_width=True,height=700, theme="streamlit")#
 
-# plot change 
-def change_bar_plot():
+
+# AI teacher differ count(dataprocess and plot)
+def AI_teacher_differ_count_bar_plot(df_n, df_p, bins_type, labels_type):
+    n_change_interval = pd.cut(df_n['absolutechange'], 
+                            bins=bins_type, labels=labels_type, right=False)
+    n_changecounts_df = pd.DataFrame(n_change_interval.value_counts(sort=False))
+    n_changecounts_df.columns = ["nchange"]
+
+    p_change_interval = pd.cut(df_p['absolutechange'], 
+                            bins=bins_type, labels=labels_type, right=False)
+    p_changecounts_df = pd.DataFrame(p_change_interval.value_counts(sort=False))
+    p_changecounts_df.columns = ["pchange"]
+
+    np_changecounts_df = pd.concat([p_changecounts_df, n_changecounts_df],axis = 1)
+
     fig4 = go.Figure()
     fig4.add_trace(go.Bar(name='AI>teacher', 
-                    x=labels, y = np_changecounts_df["pchange"], 
+                    x=labels_type, y = np_changecounts_df["pchange"], 
                     marker_color = AIgreaterthanteacher_color,
                     text = np_changecounts_df["pchange"], textposition="inside", 
                     textfont=dict(size=13,color = "white")))
     fig4.add_trace(go.Bar(name='teacher>AI', 
-                    x=labels, y = np_changecounts_df["nchange"], 
+                    x=labels_type, y = np_changecounts_df["nchange"], 
                     marker_color = teachergreaterthanAI_color,
                     text = np_changecounts_df["nchange"], textposition="inside", 
                     textfont=dict(size=13,color = "white")))
@@ -229,6 +226,33 @@ def change_bar_plot():
     fig4.update_xaxes(title="級距")
     fig4.update_yaxes(title="數量", range=[0, 90])
     st.plotly_chart(fig4, use_container_width=True,height=800, theme="streamlit")
+
+####################################################################
+########################### data process ###########################
+####################################################################
+result_df = pd.read_csv("https://raw.githubusercontent.com/lnl1119/2023SOS_result/main/2023SOS_result_all_clean_final.csv")
+# bar and area plot data
+bar_df = result_df.sort_values(by=['realscore'])
+bar_df = bar_df.reset_index(drop = True)
+
+# bin, label
+bins_0100 = bins_function(0, 100, 10)
+labels_0100 = labels_function(bins_0100)
+bins_080 = bins_function(0, 80, 5)
+labels_080 = labels_function(bins_080)
+bar_df['realInterval'] = pd.cut(bar_df['realscore'], bins=bins_0100, labels=labels_0100, right=False)
+bar_df['AIInterval'] = pd.cut(bar_df['AIscore'], bins=bins_0100, labels=labels_0100, right=False)
+realcounts = bar_df['realInterval'].value_counts(sort=False)
+AIcounts = bar_df['AIInterval'].value_counts(sort=False)
+# dumbbell plot
+raw_df = result_df[["realscore", "AIscore"]]
+raw_df['change'] = raw_df.iloc[:, 1] - raw_df.iloc[:, 0]# AI - real
+raw_df['absolutechange'] = raw_df['change'].abs()
+# AI and teacher difference for histogram(show all range in bin)
+df_n = raw_df[raw_df['change'] < 0]
+df_0 = raw_df[raw_df['change'] == 0]
+df_p = raw_df[raw_df['change'] > 0]
+
 
 # #####################################################
 # ####################### page 1 ######################
@@ -246,11 +270,22 @@ if selected == "分佈":#st.title(f"{selected}")
 # #####################################################
 if selected == "啞鈴圖":
     st.markdown('## AI改作業結果')
-    # button
-    on = st.toggle('分開 **老師>AI** 與 **老師<AI**', value = True)
+    st.markdown('### 選項')
+    # toggle 
+    on = st.toggle('#### 1️⃣ 分開**老師>AI** 與 **老師<AI**', value = True)
+    st.markdown('#### 2️⃣ 選擇**排序項目**')
+    # radio list
     sort_option = st.radio(
-        '選擇作為排列的項目',
+        '',
         ('老師分數', 'AI分數', '差距'))
+    # slider
+    col1, col2= st.columns(2)#[0.3,0.7]
+    with col1:
+        st.markdown('#### 3️⃣ 你可以接受？分的**老師與AI分數誤差**')
+        score_differ = st.slider('', 0, 50, 5)
+    with col2:
+        st.markdown('#### 4️⃣ 顯示？分以上的**分數差距標籤**（數字越大，顯示的標籤越少）')
+        show_differlabel = st.slider('', 0, 50, 25)
 
     st.divider()
 
@@ -262,16 +297,28 @@ if selected == "啞鈴圖":
             sort_condition = "AIscore"
         elif sort_option == "差距":
             sort_condition = "change"
-        df_n = df_n.sort_values([sort_condition])
-        df_n.reset_index(inplace = True)#
-        df_0 = df_0.sort_values([sort_condition], ascending=False)
-        df_0.reset_index(inplace = True)
-        df_p = df_p.sort_values([sort_condition], ascending=False)#, ascending=False
-        df_p.reset_index(inplace = True)
-        df_on = pd.concat([df_n, df_0, df_p], axis = 0)
+        
+        # score_differ
+        df_differ_n = raw_df[raw_df['change'] < -score_differ]
+        df_differ_0 = raw_df[(raw_df['change'] <= score_differ) & (raw_df['change'] >= -score_differ)]
+        df_differ_p = raw_df[raw_df['change'] > score_differ]
+        # scorediffer_n_shape = df_differ_n.shape[0]
+        # scorediffer_0_shape = df_differ_0.shape[0]
+        # scorediffer_p_shape = df_differ_p.shape[0]
+
+
+
+        df_differ_n.sort_values([sort_condition], inplace = True)
+        df_differ_n.reset_index(inplace = True)
+        df_differ_0.sort_values([sort_condition], ascending=False, inplace = True)
+        df_differ_0.reset_index(inplace = True)
+        df_differ_p.sort_values([sort_condition], ascending=False, inplace = True)#, ascending=False
+        df_differ_p.reset_index(inplace = True)
+        df_on = pd.concat([df_differ_n, df_differ_0, df_differ_p], axis = 0)
         df_on.reset_index(inplace = True, drop = True)
-        show_dashline = True
-        dumbbell_plot(df_on, show_dashline)
+
+        AI_teacher_split = True
+        dumbbell_plot(df_on, AI_teacher_split, show_differlabel, score_differ)
         # st.table(df_on.head())
         
     else:
@@ -283,9 +330,13 @@ if selected == "啞鈴圖":
             sort_condition = "change"#absolutechange
         df_off = raw_df.sort_values([sort_condition], ascending=False)#, ascending=False
         df_off.reset_index(inplace = True)
-        show_dashline = False
-        dumbbell_plot(df_off, show_dashline)
+
+        AI_teacher_split = False
+        dumbbell_plot(df_off, AI_teacher_split, show_differlabel, score_differ)
         # st.table(raw_df.head())
 
     
-    change_bar_plot()
+    AI_teacher_differ_count_bar_plot(df_n, df_p, bins_080, labels_080)
+
+    
+
