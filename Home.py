@@ -230,9 +230,10 @@ def AI_teacher_differ_count_bar_plot(df_n, df_p, bins_type, labels_type):
 ####################################################################
 ########################### data process ###########################
 ####################################################################
-result_df = pd.read_csv("https://raw.githubusercontent.com/lnl1119/2023SOS_result/main/2023SOS_result_all_clean_final.csv")
+result_ver1_df = pd.read_csv("https://raw.githubusercontent.com/lnl1119/2023SOS_result/main/2023SOS_result_all_clean_final.csv")
+result_ver1and2_df = pd.read_csv("https://raw.githubusercontent.com/lnl1119/2023SOS_result/main/2023SOS_result_all_clean_final.csv")
 # bar and area plot data
-bar_df = result_df.sort_values(by=['realscore'])
+bar_df = result_ver1_df.sort_values(by=['realscore'])
 bar_df = bar_df.reset_index(drop = True)
 
 # bin, label
@@ -245,7 +246,7 @@ bar_df['AIInterval'] = pd.cut(bar_df['AIscore'], bins=bins_0100, labels=labels_0
 realcounts = bar_df['realInterval'].value_counts(sort=False)
 AIcounts = bar_df['AIInterval'].value_counts(sort=False)
 # dumbbell plot
-raw_df = result_df[["realscore", "AIscore"]]
+raw_df = result_ver1_df[["realscore", "AIscore"]]
 raw_df['change'] = raw_df.iloc[:, 1] - raw_df.iloc[:, 0]# AI - real
 raw_df['absolutechange'] = raw_df['change'].abs()
 # AI and teacher difference for histogram(show all range in bin)
@@ -262,9 +263,9 @@ if selected == "分佈":#st.title(f"{selected}")
     # each grade count
     tab1, tab2 = st.tabs(["📈直方圖", "🔼面積圖"])
     with tab1:
-        bar_plot(result_df)
+        bar_plot(result_ver1_df)
     with tab2:
-        area_plot(result_df)
+        area_plot(result_ver1_df)
 # #####################################################
 # ####################### page 2 ######################
 # #####################################################
