@@ -16,8 +16,8 @@ with open('style.css') as f:
 ####################################################################
 ############################# variable #############################
 ####################################################################
-page1_name = "ver1啞鈴圖"
-page2_name = "ver1 vs ver2"
+page1_name = "ver1 result(09/19)"
+page2_name = "ver1 vs ver2 (09/19 vs 09/26)"
 page3_name = "老師與AI成績分佈"
 teacher_color = "#00a1de"
 AI_color = "#ff7f50"
@@ -374,12 +374,9 @@ df_p = raw_df[raw_df['change'] > 0]
 raw2_df = result_ver1and2_df[["realscore", "AIscore_ver1", "AIscore_ver2"]]
 raw2_df['change1'] = raw2_df.iloc[:, 1] - raw2_df.iloc[:, 0]# AI1 - real
 raw2_df['change2'] = raw2_df.iloc[:, 2] - raw2_df.iloc[:, 0]# AI2 - real
-raw2_df['absolutechange1'] = raw2_df['change1'].abs()
-raw2_df['absolutechange2'] = raw2_df['change2'].abs()
+# raw2_df['absolutechange1'] = raw2_df['change1'].abs()
+raw2_df['absolutechange'] = raw2_df['change2'].abs()
 # AI and teacher difference for histogram(show all range in bin)
-df_n = raw2_df[raw2_df['change1'] < 0]
-df_0 = raw2_df[raw2_df['change1'] == 0]
-df_p = raw2_df[raw2_df['change1'] > 0]
 df2_n = raw2_df[raw2_df['change2'] < 0]
 df2_0 = raw2_df[raw2_df['change2'] == 0]
 df2_p = raw2_df[raw2_df['change2'] > 0]
@@ -400,23 +397,23 @@ if selected == page3_name:#st.title(f"{selected}")
 # ####################### page 1 ######################
 # #####################################################
 if selected == page1_name:
-    st.markdown('## AI改作業結果')
+    st.markdown('## AI改作業結果ver1')
     st.markdown('### 選項')
     # toggle 
-    on = st.toggle('#### 1️⃣ 分開**老師>AI** 與 **老師<AI**', value = True)
-    st.markdown('#### 2️⃣ 選擇**排序項目**')
+    st.markdown('##### 1️⃣ 分開**老師>AI** 與 **老師<AI**')
+    on = st.toggle('顯示老師>=<AI', value = True)
     # radio list
     sort_option = st.radio(
-        '',
+        '##### 2️⃣ 選擇**排序項目**',
         ('老師分數', 'AI分數', '差距'))
     # slider
     col1, col2= st.columns(2)#[0.3,0.7]
     with col1:
-        st.markdown('#### 3️⃣ 你可以接受？分的**老師與AI分數誤差**')
+        st.markdown('##### 3️⃣ 你可以接受？分的**老師與AI分數誤差**')
         score_differ = st.slider('', 0, 50, 5)
     with col2:
-        st.markdown('#### 4️⃣ 顯示？分以上的**分數差距標籤**（數字越大，顯示的標籤越少）')
-        show_differlabel = st.slider('', 0, 50, 25)
+        st.markdown('##### 4️⃣ 顯示？分以上的**分數差距標籤**（數字越大，顯示的標籤越少）')
+        show_differlabel = st.slider('', 0, 50, 30)
 
     st.divider()
 
@@ -472,23 +469,23 @@ if selected == page1_name:
 # ####################### page 2 ######################
 # #####################################################
 if selected == page2_name:
-    st.markdown('## AI改作業結果')
+    st.markdown('## AI改作業結果ver1 vs ver2')
     st.markdown('### 選項')
     # toggle 
-    on2 = st.toggle('#### 1️⃣ 分開**老師>AI** 與 **老師<AI**', value = True)
-    st.markdown('#### 2️⃣ 選擇**排序項目**')
+    st.markdown('##### 1️⃣ 分開**老師>AI** 與 **老師<AI**')
+    on2 = st.toggle('顯示老師>=<AI', value = True)
     # radio list
     sort_option2 = st.radio(
-        '',
+        '##### 2️⃣ 選擇**排序項目**',
         ('老師分數', 'AI分數', '差距'))
     # slider
     col1, col2= st.columns(2)#[0.3,0.7]
     with col1:
-        st.markdown('#### 3️⃣ 你可以接受？分的**老師與AI分數誤差**')
+        st.markdown('##### 3️⃣ 你可以接受？分的**老師與AI分數誤差**')
         score_differ2 = st.slider('', 0, 50, 5)
     with col2:
-        st.markdown('#### 4️⃣ 顯示？分以上的**分數差距標籤**（數字越大，顯示的標籤越少）')
-        show_differlabel2 = st.slider('', 0, 50, 25)
+        st.markdown('##### 4️⃣ 顯示？分以上的**分數差距標籤**（數字越大，顯示的標籤越少）')
+        show_differlabel2 = st.slider('', 0, 50, 30)
 
     st.divider()
 
@@ -534,6 +531,6 @@ if selected == page2_name:
         st.table(raw2_df.head())
 
     
-    # AI_teacher_differ_count_bar_plot(df2_n, df2_p, bins_080, labels_080)
+    AI_teacher_differ_count_bar_plot(df2_n, df2_p, bins_080, labels_080)
     
 
