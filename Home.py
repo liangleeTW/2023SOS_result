@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import random
+from pathlib import Path
 ####################################################################
 ########################## initial set up ##########################
 ####################################################################
@@ -50,6 +51,8 @@ with st.sidebar:
 ####################################################################
 ############################# function #############################
 ####################################################################
+def read_markdown_file(markdown_file):
+    return Path(markdown_file).read_text()
 def bins_function(start_num, end_num, range_differ):
     real_end = end_num + range_differ
     bin_list = list(range(start_num, real_end, range_differ))
@@ -144,9 +147,9 @@ def dumbbell_plot(df, AI_teacher_split, show_differlabel, score_differ):
                 font=dict(size=show_differlabel*0.2+10,color=color))
     
     if AI_teacher_split:
-        df_differ_n = raw_df[raw_df['change'] < -score_differ]
-        df_differ_0 = raw_df[(raw_df['change'] <= score_differ) & (raw_df['change'] >= -score_differ)]
-        df_differ_p = raw_df[raw_df['change'] > score_differ]
+        df_differ_n = raw_df[raw_df['change'] < -score_differ].copy()
+        df_differ_0 = raw_df[(raw_df['change'] <= score_differ) & (raw_df['change'] >= -score_differ)].copy()
+        df_differ_p = raw_df[raw_df['change'] > score_differ].copy()
         # plot vertical line to split negative and positve
         fig3.add_shape(type='line',
                         x0 = df_differ_n.shape[0]-0.5, y0 = 105,
@@ -259,9 +262,9 @@ def dumbbell_plot_vs(df, AI_teacher_split, show_differlabel2, score_differ2):
                 font=dict(size=show_differlabel2*0.2+10,color=color))
     
     if AI_teacher_split:
-        df2_differ_n = raw2_df[raw2_df['change2'] < -score_differ2]
-        df2_differ_0 = raw2_df[(raw2_df['change2'] <= score_differ2) & (raw2_df['change2'] >= -score_differ2)]
-        df2_differ_p = raw2_df[raw2_df['change2'] > score_differ2]
+        df2_differ_n = raw2_df[raw2_df['change2'] < -score_differ2].copy()
+        df2_differ_0 = raw2_df[(raw2_df['change2'] <= score_differ2) & (raw2_df['change2'] >= -score_differ2)].copy()
+        df2_differ_p = raw2_df[raw2_df['change2'] > score_differ2].copy()
         # plot vertical line to split negative and positve
         fig3.add_shape(type='line',
                         x0 = df2_differ_n.shape[0]-0.5, y0 = 105,
@@ -364,22 +367,21 @@ realcounts = bar_df['realInterval'].value_counts(sort=False)
 AIcounts = bar_df['AIInterval'].value_counts(sort=False)
 # dumbbell plot
 raw_df = result_ver1_df[["realscore", "AIscore"]]
-raw_df['change'] = raw_df.iloc[:, 1] - raw_df.iloc[:, 0]# AI - real
-raw_df['absolutechange'] = raw_df['change'].abs()
+raw_df = raw_df.assign(change = raw_df.iloc[:, 1] - raw_df.iloc[:, 0])# AI - real
+raw_df = raw_df.assign(absolutechange = raw_df['change'].abs())
 # AI and teacher difference for histogram(show all range in bin)
-df_n = raw_df[raw_df['change'] < 0]
-df_0 = raw_df[raw_df['change'] == 0]
-df_p = raw_df[raw_df['change'] > 0]
+df_n = raw_df[raw_df['change'] < 0].copy()
+df_0 = raw_df[raw_df['change'] == 0].copy()
+df_p = raw_df[raw_df['change'] > 0].copy()
 #####################################################
 raw2_df = result_ver1and2_df[["realscore", "AIscore_ver1", "AIscore_ver2"]]
-raw2_df['change1'] = raw2_df.iloc[:, 1] - raw2_df.iloc[:, 0]# AI1 - real
-raw2_df['change2'] = raw2_df.iloc[:, 2] - raw2_df.iloc[:, 0]# AI2 - real
-# raw2_df['absolutechange1'] = raw2_df['change1'].abs()
-raw2_df['absolutechange'] = raw2_df['change2'].abs()
+raw2_df = raw2_df.assign(change1 = raw2_df.iloc[:, 1] - raw2_df.iloc[:, 0])# AI1 - real
+raw2_df = raw2_df.assign(change2 = raw2_df.iloc[:, 2] - raw2_df.iloc[:, 0])# AI2 - real
+raw2_df = raw2_df.assign(absolutechange = raw2_df['change2'].abs())
 # AI and teacher difference for histogram(show all range in bin)
-df2_n = raw2_df[raw2_df['change2'] < 0]
-df2_0 = raw2_df[raw2_df['change2'] == 0]
-df2_p = raw2_df[raw2_df['change2'] > 0]
+df2_n = raw2_df[raw2_df['change2'] < 0].copy()
+df2_0 = raw2_df[raw2_df['change2'] == 0].copy()
+df2_p = raw2_df[raw2_df['change2'] > 0].copy()
 
 
 # #####################################################
@@ -387,6 +389,10 @@ df2_p = raw2_df[raw2_df['change2'] > 0]
 # #####################################################
 if selected == page3_name:#st.title(f"{selected}")
     st.markdown('## 老師與AI給成績分布')
+
+    intro_markdown = read_markdown_file("test.md")
+    st.markdown(intro_markdown, unsafe_allow_html=False)
+
     # each grade count
     tab1, tab2 = st.tabs(["📈直方圖", "🔼面積圖"])
     with tab1:
@@ -427,15 +433,10 @@ if selected == page1_name:
             sort_condition = "change"
         
         # score_differ
-        df_differ_n = raw_df[raw_df['change'] < -score_differ]
-        df_differ_0 = raw_df[(raw_df['change'] <= score_differ) & (raw_df['change'] >= -score_differ)]
-        df_differ_p = raw_df[raw_df['change'] > score_differ]
-        # scorediffer_n_shape = df_differ_n.shape[0]
-        # scorediffer_0_shape = df_differ_0.shape[0]
-        # scorediffer_p_shape = df_differ_p.shape[0]
-
-
-
+        df_differ_n = raw_df[raw_df['change'] < -score_differ].copy()
+        df_differ_0 = raw_df[(raw_df['change'] <= score_differ) & (raw_df['change'] >= -score_differ)].copy()
+        df_differ_p = raw_df[raw_df['change'] > score_differ].copy()
+        
         df_differ_n.sort_values([sort_condition], inplace = True)
         df_differ_n.reset_index(inplace = True)
         df_differ_0.sort_values([sort_condition], ascending=False, inplace = True)
@@ -530,7 +531,6 @@ if selected == page2_name:
         dumbbell_plot_vs(df2_off, AI_teacher_split, show_differlabel2, score_differ2)
         st.table(raw2_df.head())
 
-    
     AI_teacher_differ_count_bar_plot(df2_n, df2_p, bins_080, labels_080)
     
 
